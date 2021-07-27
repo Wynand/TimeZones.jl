@@ -3,11 +3,11 @@ using Dates: AbstractDateTime, argerror, validargs
 # """
 #     ZonedDateTime
 
-# A `DateTime` that includes `TimeZone` information.
+# Interprets a DateTime and Timezone as a Proleptic Gregorian Calendar Date with an IANA timezone
 # """
 
 struct ZonedDateTime <: AbstractDateTime
-    utc_datetime::DateTime
+    utc_datetime::DateTime # The instant this datetime refers to
     timezone::TimeZone
     zone::FixedTimeZone  # The current zone for the utc_datetime.
 
@@ -160,14 +160,25 @@ end
 # undefined promote_rule on TimeType types.
 # Otherwise, typejoin(T,S) is called (returning TimeType) so no conversion happens, and
 # isless(promote(x,y)...) is called again, causing a stack overflow.
-function Base.promote_rule(::Type{T}, ::Type{S}) where {T<:TimeType, S<:ZonedDateTime}
-    error("no promotion exists for ", T, " and ", S)
-end
+# function Base.promote_rule(::Type{T}, ::Type{S}) where {T<:TimeType, S<:ZonedDateTime}
+#     error("no promotion exists for ", T, " and ", S)
+# end
+
+
+Base.convert(::Type{ZonedDateTime},t::DateTime) = ZonedDateTime(t, utc_tz, from_utc=true)
+
+# ZonedDateTime always contains more information
+# Unless we start tracking funky things time dilation
+Base.promote_rule(::Type{T}, ::Type{S}) where {T<:TimeType, S<:ZonedDateTime} = ZonedDateTime
 
 # Equality
 Base.:(==)(a::ZonedDateTime, b::ZonedDateTime) = a.utc_datetime == b.utc_datetime
 Base.isless(a::ZonedDateTime, b::ZonedDateTime) = isless(a.utc_datetime, b.utc_datetime)
 Base.isequal(a::ZonedDateTime, b::ZonedDateTime) = isequal(a.utc_datetime, b.utc_datetime)
+
+# Difference
+Base.:(-)(a::DateTime,b::ZonedDateTime) = convert(ZonedDateTime,a) - b
+Base.:(-)(a::ZonedDateTime,b::DateTime) = a - convert(ZonedDateTime,b)
 
 """
     hash(::ZonedDateTime, h)

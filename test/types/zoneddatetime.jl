@@ -415,17 +415,44 @@ using Dates: Hour, Second, UTM, @dateformat_str
     end
 
     @testset "promotion" begin
-        @test_throws ErrorException promote_type(ZonedDateTime, Date)
-        @test_throws ErrorException promote_type(ZonedDateTime, DateTime)
-        @test_throws ErrorException promote_type(Date, ZonedDateTime)
-        @test_throws ErrorException promote_type(DateTime, ZonedDateTime)
+        @test promote_type(ZonedDateTime, Date) == ZonedDateTime
+        @test promote_type(ZonedDateTime, DateTime) == ZonedDateTime
+        @test promote_type(Date, ZonedDateTime) == ZonedDateTime
+        @test promote_type(DateTime, ZonedDateTime) == ZonedDateTime
         @test promote_type(ZonedDateTime, ZonedDateTime) == ZonedDateTime
-
-        # Issue #52
-        dt = now()
-        @test_throws ErrorException ZonedDateTime(dt, warsaw) > dt
     end
 
+    @testset "conversion" begin
+        dt = now(UTC)
+        d = convert(Date, dt)
+        t = convert(Time, dt)
+        zdt = ZonedDateTime(dt, tz"UTC")
+
+        # We assume this corresponds the UTInstant dt wraps
+        @test convert(ZonedDateTime, dt) == zdt
+
+        # No way to determine instant without date and time together
+        @test_throws MethodError convert(ZonedDateTime, t) 
+        @test_throws MethodError convert(ZonedDateTime, d)
+    end
+
+    @testset "math operators" begin
+        # Issue #52
+        dt = now(UTC)
+        zdt_warsaw = ZonedDateTime(dt, warsaw)
+
+        zdt_utc = ZonedDateTime(dt, tz"UTC")
+        @test zdt_utc == dt
+
+        # Finding time differences
+        @test zdt_utc - zdt_warsaw == dt - zdt_warsaw
+        @test zdt_warsaw - zdt_utc == zdt_warsaw - dt
+
+        # Adding dates doesn't make sense
+        @test_throws MethodError zdt_utc + zdt_warsaw == dt + zdt_warsaw
+        @test_throws MethodError zdt_warsaw + zdt_utc == zdt_warsaw + dt
+    end
+ 
     @testset "extrema" begin
         @test typemin(ZonedDateTime) <= ZonedDateTime(typemin(DateTime), utc)
         @test typemax(ZonedDateTime) >= ZonedDateTime(typemax(DateTime), utc)

@@ -13,9 +13,9 @@ midway = first(compile("Pacific/Midway", tzdata["australasia"]))
     @test DateTime(zdt) == DateTime(2019, 4, 11, 0)
     @test DateTime(zdt, UTC) == DateTime(2019, 4, 10, 22)
 
-    # Converting between ZonedDateTime and DateTime isn't possible as it isn't lossless.
+    # Converting from ZonedDateTime to DateTime isn't possible as it isn't lossless.
     @test_throws MethodError convert(DateTime, zdt)
-    @test_throws MethodError convert(ZonedDateTime, dt)
+    @test convert(ZonedDateTime, dt) == dt
 end
 
 @testset "Construct Date / ZonedDateTime" begin
